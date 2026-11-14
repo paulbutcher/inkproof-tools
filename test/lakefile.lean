@@ -36,6 +36,22 @@ def apiLockMatches (dir : System.FilePath) : IO Bool := do
     return false
   return true
 
+/-- The fixture's top-level namespace also exists, with no fixture modules, earlier on the search path. -/
+def apiLockSplitNamespace (dir : System.FilePath) : IO Bool := do
+  IO.println "== api-lock with a split namespace"
+  let lp ← IO.Process.output { cmd := "lake", args := #["env", "printenv", "LEAN_PATH"], cwd := dir }
+  IO.FS.withTempDir fun decoy => do
+    IO.FS.createDirAll (decoy / "InkproofToolsTest" / "Decoy")
+    let out ← IO.Process.output
+      { cmd := (dir / ".." / ".lake" / "build" / "bin" / "api-lock").toString
+        args := #["InkproofToolsTest.ApiLockFixture"], cwd := dir
+        env := #[("LEAN_PATH", some s!"{decoy}:{lp.stdout.trimAscii}")] }
+    let expected ← IO.FS.readFile (dir / "ApiLockFixture.expected")
+    if out.exitCode != 0 || out.stdout != expected then
+      IO.eprintln s!"FAILED: api-lock with a split namespace (exit {out.exitCode})\n{out.stderr}"
+      return false
+    return true
+
 @[test_driver]
 script test do
   let build ← IO.Process.spawn { cmd := "lake", args := #["build"], cwd := __dir__ }
@@ -44,4 +60,5 @@ script test do
     { cmd := (__dir__ / ".lake" / "build" / "bin" / "tests").toString, cwd := __dir__ }
   let code ← tests.wait
   let apiLock ← apiLockMatches __dir__
-  return if code == 0 && apiLock then 0 else 1
+  let split ← apiLockSplitNamespace __dir__
+  return if code == 0 && apiLock && split then 0 else 1

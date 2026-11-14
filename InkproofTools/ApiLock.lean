@@ -60,13 +60,43 @@ def apiLines (roots : Array Name) : MetaM (Array String) := do
     lines := lines.push (n, s!"{← kind env n ci} {n} : {oneLine (toString ty)}")
   return lines.qsort (fun a b => a.1.toString < b.1.toString) |>.map (·.2)
 
+/-- Lean resolves a module through the first search-path entry holding a directory named after its
+root, so a namespace split over several packages is only found in one of them. Mirrors each such
+directory into `tmp`, one symlink per file (the root module's own file included), and puts `tmp` first on the search path. -/
+private def mergeSplitRoots (tmp : System.FilePath) : IO Unit := do
+  let sp ← searchPathRef.get
+  let mut seen : Std.HashMap String (Array System.FilePath) := {}
+  for entry in sp.eraseDups do
+    unless ← entry.isDir do continue
+    for child in ← entry.readDir do
+      if ← child.path.isDir then
+        seen := seen.alter child.fileName (some <| ·.getD #[] |>.push child.path)
+  let mut merged := false
+  for (name, dirs) in seen do
+    unless dirs.size > 1 do continue
+    merged := true
+    for dir in dirs do
+      let rootFiles ← (dir.parent.getD ".").readDir
+      let own := rootFiles.filter (·.fileName.startsWith s!"{name}.") |>.map (·.path)
+      for file in own ++ (← dir.walkDir) do
+        if ← file.isDir then continue
+        let dest := if file.parent == dir.parent then tmp / file.fileName.getD ""
+          else tmp / name / (file.toString.drop (dir.toString.length + 1)).toString
+        if let some parent := dest.parent then IO.FS.createDirAll parent
+        if ← dest.pathExists then continue
+        let child ← IO.Process.output { cmd := "ln", args := #["-s", file.toString, dest.toString] }
+        if child.exitCode != 0 then throw <| IO.userError s!"cannot link {file}: {child.stderr}"
+  if merged then searchPathRef.set (tmp :: sp)
+
 /-- Imports `roots` and prints their API lines. -/
 def run (roots : Array Name) : IO Unit := do
   initSearchPath (← findSysroot)
-  unsafe enableInitializersExecution
-  let env ← importModules (roots.map ({ module := · })) {} (loadExts := true)
-  let ctx : Core.Context := { fileName := "<api-lock>", fileMap := default }
-  let (lines, _) ← (apiLines roots).run' |>.toIO ctx { env }
-  for line in lines do IO.println line
+  IO.FS.withTempDir fun tmp => do
+    mergeSplitRoots tmp
+    unsafe enableInitializersExecution
+    let env ← importModules (roots.map ({ module := · })) {} (loadExts := true)
+    let ctx : Core.Context := { fileName := "<api-lock>", fileMap := default }
+    let (lines, _) ← (apiLines roots).run' |>.toIO ctx { env }
+    for line in lines do IO.println line
 
 end InkproofTools.ApiLock
