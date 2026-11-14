@@ -3,6 +3,7 @@ Copyright (c) 2026 Paul Butcher. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 import InkproofToolsTest.AxiomFixture.Clean.Theorems
+import InkproofToolsTest.AxiomFixture.Consumer.Theorems
 import InkproofToolsTest.AxiomFixture.Dirty.Uses
 import InkproofTools.AxiomCheck
 
@@ -32,6 +33,23 @@ run_cmd do
   let clean := fixture ++ `Clean
   if (← liftCoreM (violations env clean)).isEmpty then
     throwError "axioms were accepted although none are allowed"
+
+run_cmd do
+  let env ← getEnv
+  let consumer := fixture ++ `Consumer
+  let dep := fixture ++ `Dep ++ `Axioms
+  unless (← liftCoreM (violations env consumer none [dep])).isEmpty do
+    throwError "an axiom from a dependency's axioms module was rejected"
+  liftCoreM (check consumer none [dep])
+  if (← liftCoreM (violations env consumer)).isEmpty then
+    throwError "an axiom from a dependency was accepted without naming its module"
+
+run_cmd do
+  let env ← getEnv
+  let dirty := fixture ++ `Dirty
+  let dep := fixture ++ `Dep ++ `Axioms
+  unless (← liftCoreM (violations env dirty (some (dirty ++ `Axioms)) [dep])).size == 3 do
+    throwError "naming a dependency's axioms module excused an axiom declared under the root"
 
 run_cmd do
   let env ← getEnv

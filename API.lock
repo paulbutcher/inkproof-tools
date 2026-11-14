@@ -2,8 +2,8 @@ def InkproofTools.ApiLock.apiLines : Array Lean.Name → Lean.Meta.MetaM (Array 
 def InkproofTools.ApiLock.run : Array Lean.Name → IO Unit
 def InkproofTools.ApiLock.run.unsafe_1 : BaseIO Unit
 opaque InkproofTools.ApiLock.run.unsafe_impl_2 : BaseIO Unit
-def InkproofTools.AxiomCheck.check : Lean.Name → optParam (Option Lean.Name) Option.none → Lean.Core.CoreM Unit
-def InkproofTools.AxiomCheck.violations : Lean.Environment → Lean.Name → optParam (Option Lean.Name) Option.none → Lean.Core.CoreM (Array String)
+def InkproofTools.AxiomCheck.check : Lean.Name → optParam (Option Lean.Name) Option.none → optParam (List Lean.Name) [] → Lean.Core.CoreM Unit
+def InkproofTools.AxiomCheck.violations : Lean.Environment → Lean.Name → optParam (Option Lean.Name) Option.none → optParam (List Lean.Name) [] → Lean.Core.CoreM (Array String)
 structure InkproofTools.Test.Rng : Type
 def InkproofTools.Test.Rng.array : {γ : Type} → InkproofTools.Test.Rng → Nat → (InkproofTools.Test.Rng → γ × InkproofTools.Test.Rng) → Array γ × InkproofTools.Test.Rng
 constructor InkproofTools.Test.Rng.mk : UInt64 → InkproofTools.Test.Rng

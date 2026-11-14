@@ -25,4 +25,4 @@ open Lean Elab Command
 run_cmd liftCoreM (InkproofTools.AxiomCheck.check `MyLib (some `MyLib.Axioms))
 ```
 
-Compiling it fails on an axiom declared outside `MyLib.Axioms`, on a declaration using an axiom not declared there or in Lean, and when no module starts with `MyLib`. Omit the second argument if the library has no axioms.
+Compiling it fails on an axiom declared outside `MyLib.Axioms`, on a declaration using an axiom not declared there or in Lean, and when no module starts with `MyLib`. Omit the second argument if the library has no axioms. A third argument lists the axioms modules of libraries depended on, such as ``[`Inkproof.Core.Axioms]``, whose axioms are also allowed.

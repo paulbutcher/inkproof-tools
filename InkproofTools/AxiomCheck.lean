@@ -10,10 +10,11 @@ namespace InkproofTools.AxiomCheck
 
 /-- The problems with the declarations of the modules whose names start with `root`: an axiom
 declared outside `axiomsModule` (or any axiom, if there is none), a declaration depending on an
-axiom that is neither Lean's own nor declared in `axiomsModule`, or no declarations at all, which
-would make the check pass vacuously. -/
-def violations (env : Environment) (root : Name) (axiomsModule : Option Name := none) :
-    CoreM (Array String) := do
+axiom that is neither Lean's own nor declared in `axiomsModule` or one of `dependencyAxioms` (the
+axioms modules of libraries depended on), or no declarations at all, which would make the check
+pass vacuously. -/
+def violations (env : Environment) (root : Name) (axiomsModule : Option Name := none)
+    (dependencyAxioms : List Name := []) : CoreM (Array String) := do
   let moduleOf (n : Name) : Option Name :=
     (env.getModuleIdxFor? n).bind (env.allImportedModuleNames[·.toNat]?)
   let mut listed : NameSet := ({} : NameSet).insert `propext |>.insert `Classical.choice
@@ -21,6 +22,8 @@ def violations (env : Environment) (root : Name) (axiomsModule : Option Name := 
   let mut library : Array Name := #[]
   let mut problems : Array String := #[]
   for (n, ci) in env.constants.map₁.toList do
+    if ci matches .axiomInfo _ then
+      if (moduleOf n).any dependencyAxioms.contains then listed := listed.insert n
     unless (moduleOf n).any root.isPrefixOf do continue
     library := library.push n
     if ci matches .axiomInfo _ then
@@ -40,8 +43,9 @@ def violations (env : Environment) (root : Name) (axiomsModule : Option Name := 
 
 /-- Fails if `violations` finds anything. Call it from a `run_cmd` in a module that imports the
 library. -/
-def check (root : Name) (axiomsModule : Option Name := none) : CoreM Unit := do
-  let problems ← violations (← getEnv) root axiomsModule
+def check (root : Name) (axiomsModule : Option Name := none) (dependencyAxioms : List Name := []) :
+    CoreM Unit := do
+  let problems ← violations (← getEnv) root axiomsModule dependencyAxioms
   unless problems.isEmpty do
     throwError "axiom check failed for {root}:\n{"\n".intercalate problems.toList}"
 
