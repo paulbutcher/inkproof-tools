@@ -1,0 +1,23 @@
+def InkproofTools.ApiLock.apiLines : Array Lean.Name → Lean.Meta.MetaM (Array String)
+def InkproofTools.ApiLock.run : Array Lean.Name → IO Unit
+def InkproofTools.ApiLock.run.unsafe_1 : BaseIO Unit
+opaque InkproofTools.ApiLock.run.unsafe_impl_2 : BaseIO Unit
+def InkproofTools.AxiomCheck.check : Lean.Name → optParam (Option Lean.Name) Option.none → Lean.Core.CoreM Unit
+def InkproofTools.AxiomCheck.violations : Lean.Environment → Lean.Name → optParam (Option Lean.Name) Option.none → Lean.Core.CoreM (Array String)
+structure InkproofTools.Test.Rng : Type
+def InkproofTools.Test.Rng.array : {γ : Type} → InkproofTools.Test.Rng → Nat → (InkproofTools.Test.Rng → γ × InkproofTools.Test.Rng) → Array γ × InkproofTools.Test.Rng
+constructor InkproofTools.Test.Rng.mk : UInt64 → InkproofTools.Test.Rng
+def InkproofTools.Test.Rng.next : InkproofTools.Test.Rng → InkproofTools.Test.Rng
+def InkproofTools.Test.Rng.oneIn : InkproofTools.Test.Rng → Nat → Bool × InkproofTools.Test.Rng
+field InkproofTools.Test.Rng.state : InkproofTools.Test.Rng → UInt64
+structure InkproofTools.Test.TestCase : Type
+constructor InkproofTools.Test.TestCase.mk : String → Except String Unit → InkproofTools.Test.TestCase
+field InkproofTools.Test.TestCase.name : InkproofTools.Test.TestCase → String
+field InkproofTools.Test.TestCase.run : InkproofTools.Test.TestCase → Except String Unit
+def InkproofTools.Test.check : Bool → String → Except String Unit
+def InkproofTools.Test.forAll : {γ : Type} → [Repr γ] → Nat → (InkproofTools.Test.Rng → γ × InkproofTools.Test.Rng) → (γ → Except String Unit) → optParam UInt64 1 → Except String Unit
+def InkproofTools.Test.lasmStep : System.FilePath → IO Bool
+def InkproofTools.Test.platformTest : Bool → InkproofTools.Test.TestCase
+def InkproofTools.Test.runAll : System.FilePath → IO Bool
+def InkproofTools.Test.runStep : String → String → Array String → System.FilePath → optParam (Array (String × Option String)) #[] → IO Bool
+def InkproofTools.Test.runTests : List InkproofTools.Test.TestCase → IO UInt32

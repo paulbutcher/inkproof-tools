@@ -14,7 +14,15 @@ package «inkproof-tools» where
 
 @[default_target]
 lean_lib InkproofTools where
-  roots := #[`Inkproof.Tools]
+  globs := #[.submodules `InkproofTools]
+
+@[default_target]
+lean_exe «api-lock» where
+  root := `InkproofTools.ApiLockMain
+  supportInterpreter := true
+
+lean_exe «inkproof-test-driver» where
+  root := `InkproofTools.TestDriverMain
 
 @[test_driver]
 script tests do
