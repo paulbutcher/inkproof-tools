@@ -76,6 +76,14 @@ def declaresInSource (line name : String) (namespaces : List String := []) : Boo
   | some n => (candidates namespaces name).contains n
   | none => false
 
+/-- Whether a line of Lean source, read inside `namespaces` (outermost first), declares the theorem
+with the full name `fullName`: a declaration takes the name it is written with in the namespaces it
+is inside. -/
+def declaresInSourceAt (line fullName : String) (namespaces : List String) : Bool :=
+  match sourceTheoremName line with
+  | some n => qualify namespaces n == fullName
+  | none => false
+
 /-- Outside any namespace a name is its own full name. -/
 theorem qualify_nil (name : String) : qualify [] name = name := rfl
 
@@ -196,6 +204,12 @@ theorem declaresInSource_iff (line name : String) (namespaces : List String) :
     declaresInSource line name namespaces = true ↔
       ∃ n, sourceTheoremName line = some n ∧ n ∈ candidates namespaces name := by
   unfold declaresInSource
+  cases sourceTheoremName line <;> simp
+
+theorem declaresInSourceAt_iff (line fullName : String) (namespaces : List String) :
+    declaresInSourceAt line fullName namespaces = true ↔
+      ∃ n, sourceTheoremName line = some n ∧ qualify namespaces n = fullName := by
+  unfold declaresInSourceAt
   cases sourceTheoremName line <;> simp
 
 /-- An unindented `theorem` line declares the name up to the first whitespace, colon or binder. -/

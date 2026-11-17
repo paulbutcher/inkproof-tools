@@ -44,3 +44,10 @@ run_meta do
   expect (!d "theorem foobar (x : Nat)" "foo") "prefix of a name accepted"
   expect (!d "lemma foo : True" "foo") "non-theorem accepted"
   expect (!d "-- theorem foo : True" "foo") "comment accepted"
+
+run_meta do
+  expect (declaresInSourceAt "theorem f_eq (h : p) :" "X.f_eq" ["X"]) "name in namespace not found"
+  expect (declaresInSourceAt "theorem X.f_eq" "X.f_eq" []) "full name not found"
+  expect (declaresInSourceAt "  theorem mono {a : α}" "X.G.mono" ["X", "G"]) "nested namespaces not found"
+  expect (!declaresInSourceAt "theorem f_eq : True" "X.f_eq" []) "namespace ignored"
+  expect (!declaresInSourceAt "theorem f_eq : True" "f_eq" ["X"]) "outer name accepted"

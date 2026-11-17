@@ -11,7 +11,7 @@ require «inkproof-tools» from git "https://github.com/paulbutcher/inkproof-too
 ## What it does
 
 - Record a library's public API (declarations and theorem statements) in `API.lock`, to review and diff: `lake exe api-lock`, `scripts/api-lock.sh`, `InkproofTools.ApiLock.run`, `apiLines`.
-- Read the lines of an `API.lock` back, without Lean: `InkproofTools.ApiLock.parseTheorem` (name and statement of a theorem line), `declares` (does a line declare a full or namespace-relative name), `declaresInSource` (the same for a Lean source line, with binders or no colon), `qualify`, `candidates`.
+- Read the lines of an `API.lock` back, without Lean: `InkproofTools.ApiLock.parseTheorem` (name and statement of a theorem line), `declares` (does a line declare a full or namespace-relative name), `declaresInSource` (the same for a Lean source line, with binders or no colon), `declaresInSourceAt` (does a source line, read inside given namespaces, declare a full name), `qualify`, `candidates`.
 - Run a library's tests natively and under Lasm from one driver: `lake exe inkproof-test-driver`, `InkproofTools.Test.runAll`, `runStep`, `lasmStep`, `runTests`.
 - Write test cases, property tests with a seeded random generator, and a check that a platform runs the expected build: `InkproofTools.Test.TestCase`, `check`, `forAll`, `Rng`, `platformTest`.
 - Check that a library declares axioms only in its axioms module and uses no others: `InkproofTools.AxiomCheck.check`, `violations`.

@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.0
+
+`InkproofTools.ApiLock.declaresInSourceAt` says whether a source line read inside given namespaces declares a theorem with a given full name.
+
 ## v0.4.0
 
 `InkproofTools.ApiLock.declaresInSource` says whether a line of Lean source declares a theorem, with binders after the name or none.
