@@ -33,6 +33,8 @@ private def hidden (n : Nat) : Nat := n + 1
 
 theorem total_nil : total [] = 0 := rfl
 
+theorem total_line (n : Nat) : total [.line n] = n := by simp [total, HasArea.area]
+
 axiom fixtureAxiom : ∀ n : Nat, n = n
 
 opaque secret : Nat

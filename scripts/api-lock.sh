@@ -4,5 +4,5 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 lake build >&2
-if [ $# -eq 0 ]; then set -- InkproofTools.ApiLock InkproofTools.AxiomCheck InkproofTools.Test.Driver InkproofTools.Test.Harness InkproofTools.Test.Platform; fi
+if [ $# -eq 0 ]; then set -- InkproofTools.ApiLock InkproofTools.ApiLock.Reader InkproofTools.AxiomCheck InkproofTools.Test.Driver InkproofTools.Test.Harness InkproofTools.Test.Platform; fi
 lake exe api-lock "$@"

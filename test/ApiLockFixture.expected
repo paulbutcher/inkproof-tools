@@ -16,4 +16,5 @@ instance Fixture.instReprShape : Repr Fixture.Shape
 def Fixture.instReprShape.repr : Fixture.Shape → Nat → Std.Format
 opaque Fixture.secret : Nat
 def Fixture.total : List Fixture.Shape → Nat
+theorem Fixture.total_line : ∀ (n : Nat), Fixture.total [Fixture.Shape.line n] = n
 theorem Fixture.total_nil : Fixture.total [] = 0

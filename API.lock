@@ -1,7 +1,29 @@
+structure InkproofTools.ApiLock.Theorem : Type
+constructor InkproofTools.ApiLock.Theorem.mk : String → String → InkproofTools.ApiLock.Theorem
+field InkproofTools.ApiLock.Theorem.name : InkproofTools.ApiLock.Theorem → String
+field InkproofTools.ApiLock.Theorem.statement : InkproofTools.ApiLock.Theorem → String
 def InkproofTools.ApiLock.apiLines : Array Lean.Name → Lean.Meta.MetaM (Array String)
+def InkproofTools.ApiLock.candidates : List String → String → List String
+theorem InkproofTools.ApiLock.candidates_nil : ∀ (name : String), InkproofTools.ApiLock.candidates [] name = [name]
+def InkproofTools.ApiLock.declares : String → String → optParam (List String) [] → Bool
+theorem InkproofTools.ApiLock.declares_full : ∀ (line name : String) (namespaces : List String) (thm : InkproofTools.ApiLock.Theorem), InkproofTools.ApiLock.parseTheorem line = Option.some thm → thm.name = name → InkproofTools.ApiLock.declares line name namespaces = Bool.true
+theorem InkproofTools.ApiLock.declares_iff : ∀ (line name : String) (namespaces : List String), InkproofTools.ApiLock.declares line name namespaces = Bool.true ↔ ∃ thm, InkproofTools.ApiLock.parseTheorem line = Option.some thm ∧ thm.name ∈ InkproofTools.ApiLock.candidates namespaces name
+theorem InkproofTools.ApiLock.declares_relative : ∀ (line name : String) (namespaces : List String) (k : Nat) (thm : InkproofTools.ApiLock.Theorem), InkproofTools.ApiLock.parseTheorem line = Option.some thm → k ≤ namespaces.length → thm.name = InkproofTools.ApiLock.qualify (List.take k namespaces) name → InkproofTools.ApiLock.declares line name namespaces = Bool.true
+theorem InkproofTools.ApiLock.eq_theoremLine_of_parseTheorem : ∀ (line : String) (thm : InkproofTools.ApiLock.Theorem), InkproofTools.ApiLock.parseTheorem line = Option.some thm → line = InkproofTools.ApiLock.theoremLine thm.name thm.statement
+instance InkproofTools.ApiLock.instBEqTheorem : BEq InkproofTools.ApiLock.Theorem
+def InkproofTools.ApiLock.instBEqTheorem.beq : InkproofTools.ApiLock.Theorem → InkproofTools.ApiLock.Theorem → Bool
+instance InkproofTools.ApiLock.instReprTheorem : Repr InkproofTools.ApiLock.Theorem
+def InkproofTools.ApiLock.instReprTheorem.repr : InkproofTools.ApiLock.Theorem → Nat → Std.Format
+theorem InkproofTools.ApiLock.mem_candidates : ∀ (namespaces : List String) (name full : String), full ∈ InkproofTools.ApiLock.candidates namespaces name ↔ ∃ k, k ≤ namespaces.length ∧ InkproofTools.ApiLock.qualify (List.take k namespaces) name = full
+def InkproofTools.ApiLock.parseTheorem : String → Option InkproofTools.ApiLock.Theorem
+theorem InkproofTools.ApiLock.parseTheorem_theoremLine : ∀ (name statement : String), ¬' ' ∈ name.toList → InkproofTools.ApiLock.parseTheorem (InkproofTools.ApiLock.theoremLine name statement) = Option.some { name := name, statement := statement }
+def InkproofTools.ApiLock.qualify : List String → String → String
+theorem InkproofTools.ApiLock.qualify_nil : ∀ (name : String), InkproofTools.ApiLock.qualify [] name = name
+theorem InkproofTools.ApiLock.qualify_of_ne_nil : ∀ (namespaces : List String) (name : String), namespaces ≠ [] → InkproofTools.ApiLock.qualify namespaces name = ".".intercalate namespaces ++ "." ++ name
 def InkproofTools.ApiLock.run : Array Lean.Name → IO Unit
 def InkproofTools.ApiLock.run.unsafe_1 : BaseIO Unit
 opaque InkproofTools.ApiLock.run.unsafe_impl_2 : BaseIO Unit
+def InkproofTools.ApiLock.theoremLine : String → String → String
 def InkproofTools.AxiomCheck.check : Lean.Name → optParam (Option Lean.Name) Option.none → optParam (List Lean.Name) [] → Lean.Core.CoreM Unit
 def InkproofTools.AxiomCheck.violations : Lean.Environment → Lean.Name → optParam (Option Lean.Name) Option.none → optParam (List Lean.Name) [] → Lean.Core.CoreM (Array String)
 structure InkproofTools.Test.Rng : Type
