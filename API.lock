@@ -28,6 +28,7 @@ def InkproofTools.ApiLock.run : Array Lean.Name → IO Unit
 def InkproofTools.ApiLock.run.unsafe_1 : BaseIO Unit
 opaque InkproofTools.ApiLock.run.unsafe_impl_2 : BaseIO Unit
 def InkproofTools.ApiLock.sourceTheoremName : String → Option String
+theorem InkproofTools.ApiLock.sourceTheoremName_attribute : ∀ (attrs name tail : String), name ≠ "" → (∀ (c : Char), c ∈ attrs.toList → c ≠ '[' ∧ c ≠ ']') → (∀ (d : Char), d ∈ name.toList → InkproofTools.ApiLock.isNameEnd✝ d = Bool.false) → (∀ (c : Char), c ∈ tail.toList.head? → InkproofTools.ApiLock.isNameEnd✝ c = Bool.true) → InkproofTools.ApiLock.sourceTheoremName ("@[" ++ attrs ++ "] theorem " ++ name ++ tail) = Option.some name
 theorem InkproofTools.ApiLock.sourceTheoremName_theorem : ∀ (name tail : String), name ≠ "" → (∀ (d : Char), d ∈ name.toList → InkproofTools.ApiLock.isNameEnd✝ d = Bool.false) → (∀ (c : Char), c ∈ tail.toList.head? → InkproofTools.ApiLock.isNameEnd✝ c = Bool.true) → InkproofTools.ApiLock.sourceTheoremName ("theorem " ++ name ++ tail) = Option.some name
 def InkproofTools.ApiLock.theoremLine : String → String → String
 def InkproofTools.AxiomCheck.check : Lean.Name → optParam (Option Lean.Name) Option.none → optParam (List Lean.Name) [] → Lean.Core.CoreM Unit

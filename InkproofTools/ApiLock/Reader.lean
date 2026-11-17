@@ -59,14 +59,36 @@ private def isNameEnd (c : Char) : Bool :=
 private def dropOptional (p : String) (cs : List Char) : List Char :=
   (dropPrefix p.toList cs).getD cs
 
-/-- The name a line of Lean source declares as a theorem, after any indentation and a `private` or
-`protected` modifier. The name ends at whitespace, a colon or the first binder, so binders and a
-statement on a later line do not matter. -/
-def sourceTheoremName (line : String) : Option String := do
-  let cs := dropOptional "protected " (dropOptional "private " (line.toList.dropWhile Char.isWhitespace))
-  let rest ← dropPrefix theoremTag cs
+/-- The rest after the `]` that closes a bracket opened `depth` levels deep. -/
+private def skipBracketed : Nat → List Char → Option (List Char)
+  | _, [] => none
+  | d, ']' :: cs => if d == 0 then some cs else skipBracketed (d - 1) cs
+  | d, '[' :: cs => skipBracketed (d + 1) cs
+  | d, _ :: cs => skipBracketed d cs
+
+/-- Drops up to `fuel` leading `@[...]` blocks and the whitespace after each. An unterminated block
+is left alone. -/
+private def skipAttributes : Nat → List Char → List Char
+  | 0, cs => cs
+  | n + 1, cs =>
+    match dropPrefix "@[".toList cs with
+    | some rest =>
+      match skipBracketed 0 rest with
+      | some after => skipAttributes n (after.dropWhile Char.isWhitespace)
+      | none => cs
+    | none => cs
+
+private def theoremNameOf (cs : List Char) : Option String := do
+  let rest ← dropPrefix theoremTag (dropOptional "protected " (dropOptional "private " cs))
   let name := rest.takeWhile (!isNameEnd ·)
   if name.isEmpty then none else some (String.ofList name)
+
+/-- The name a line of Lean source declares as a theorem, after any indentation, attributes and a
+`private` or `protected` modifier. The name ends at whitespace, a colon or the first binder, so binders and a
+statement on a later line do not matter. -/
+def sourceTheoremName (line : String) : Option String :=
+  let cs := line.toList.dropWhile Char.isWhitespace
+  theoremNameOf (skipAttributes cs.length cs)
 
 /-- Whether a line of Lean source declares the theorem `name`, written in full or relative to
 `namespaces`. Unlike `declares`, which reads `API.lock` lines, the name may be followed by binders or
@@ -212,14 +234,25 @@ theorem declaresInSourceAt_iff (line fullName : String) (namespaces : List Strin
   unfold declaresInSourceAt
   cases sourceTheoremName line <;> simp
 
-/-- An unindented `theorem` line declares the name up to the first whitespace, colon or binder. -/
-theorem sourceTheoremName_theorem (name tail : String) (hn : name ≠ "")
+private theorem skipAttributes_theorem (fuel : Nat) (r : List Char) :
+    skipAttributes fuel (theoremTag ++ r) = theoremTag ++ r := by
+  cases fuel <;> simp [skipAttributes, theoremTag, dropPrefix]
+
+private theorem skipBracketed_zero (a rest : List Char) (h : ∀ c ∈ a, c ≠ '[' ∧ c ≠ ']') :
+    skipBracketed 0 (a ++ ']' :: rest) = some rest := by
+  induction a with
+  | nil => simp [skipBracketed]
+  | cons c cs ih =>
+    obtain ⟨h1, h2⟩ := h c List.mem_cons_self
+    have := ih (fun e he => h e (List.mem_cons_of_mem _ he))
+    simp only [List.cons_append]
+    unfold skipBracketed
+    split <;> simp_all
+
+private theorem theoremNameOf_theorem (name tail : String) (hn : name ≠ "")
     (hf : ∀ d ∈ name.toList, isNameEnd d = false)
     (ht : ∀ c ∈ tail.toList.head?, isNameEnd c = true) :
-    sourceTheoremName ("theorem " ++ name ++ tail) = some name := by
-  have hl : ("theorem " ++ name ++ tail).toList = theoremTag ++ (name.toList ++ tail.toList) := by
-    simp only [String.toList_append, List.append_assoc]
-    rfl
+    theoremNameOf (theoremTag ++ (name.toList ++ tail.toList)) = some name := by
   have htw : name.toList.takeWhile (!isNameEnd ·) = name.toList := by
     generalize name.toList = l at hf
     induction l with
@@ -232,9 +265,51 @@ theorem sourceTheoremName_theorem (name tail : String) (hn : name ≠ "")
     | nil => rfl
     | cons c cs => have := ht c (by simp [h]); simp [List.takeWhile, this]
   have hne : name.toList ≠ [] := fun h => hn (by rw [← String.toList_inj]; simpa using h)
+  have hp : ∀ q, q = "private " ∨ q = "protected " →
+      dropOptional q (theoremTag ++ (name.toList ++ tail.toList)) = theoremTag ++ (name.toList ++ tail.toList) := by
+    rintro q (rfl | rfl) <;> simp [dropOptional, theoremTag, dropPrefix]
+  unfold theoremNameOf
+  rw [hp "private " (Or.inl rfl), hp "protected " (Or.inr rfl)]
+  simp only [bind, Option.bind, dropPrefix_append]
+  simp [List.takeWhile_append, htw, hstop, hne]
+
+private theorem dropWhile_theorem (r : List Char) :
+    (theoremTag ++ r).dropWhile Char.isWhitespace = theoremTag ++ r := by
+  simp [theoremTag, Char.isWhitespace]
+
+private theorem skipAttributes_attribute (n : Nat) (attrs rest : List Char)
+    (ha : ∀ c ∈ attrs, c ≠ '[' ∧ c ≠ ']') :
+    skipAttributes (n + 1) ('@' :: '[' :: (attrs ++ ']' :: rest)) =
+      skipAttributes n (rest.dropWhile Char.isWhitespace) := by
+  have := skipBracketed_zero attrs rest ha
+  simp [skipAttributes, dropPrefix, this]
+
+/-- A theorem is still found behind an attribute block whose contents have no brackets. -/
+theorem sourceTheoremName_attribute (attrs name tail : String) (hn : name ≠ "")
+    (ha : ∀ c ∈ attrs.toList, c ≠ '[' ∧ c ≠ ']')
+    (hf : ∀ d ∈ name.toList, isNameEnd d = false)
+    (ht : ∀ c ∈ tail.toList.head?, isNameEnd c = true) :
+    sourceTheoremName ("@[" ++ attrs ++ "] theorem " ++ name ++ tail) = some name := by
+  have hl : ("@[" ++ attrs ++ "] theorem " ++ name ++ tail).toList =
+      '@' :: '[' :: (attrs.toList ++ ']' :: ' ' :: (theoremTag ++ (name.toList ++ tail.toList))) := by
+    simp only [String.toList_append, List.append_assoc]
+    rfl
   unfold sourceTheoremName
-  rw [hl]
-  simp only [theoremTag, bind, Option.bind]
-  simp [dropOptional, dropPrefix, List.takeWhile_append, htw, hstop, hne]
+  simp only []
+  rw [hl, List.dropWhile_cons_of_neg (by simp [Char.isWhitespace])]
+  rw [List.length_cons, skipAttributes_attribute _ _ _ ha, List.dropWhile_cons_of_pos (by simp [Char.isWhitespace]),
+    dropWhile_theorem, skipAttributes_theorem, theoremNameOf_theorem name tail hn hf ht]
+
+/-- An unindented `theorem` line declares the name up to the first whitespace, colon or binder. -/
+theorem sourceTheoremName_theorem (name tail : String) (hn : name ≠ "")
+    (hf : ∀ d ∈ name.toList, isNameEnd d = false)
+    (ht : ∀ c ∈ tail.toList.head?, isNameEnd c = true) :
+    sourceTheoremName ("theorem " ++ name ++ tail) = some name := by
+  have hl : ("theorem " ++ name ++ tail).toList = theoremTag ++ (name.toList ++ tail.toList) := by
+    simp only [String.toList_append, List.append_assoc]
+    rfl
+  unfold sourceTheoremName
+  simp only []
+  rw [hl, dropWhile_theorem, skipAttributes_theorem, theoremNameOf_theorem name tail hn hf ht]
 
 end InkproofTools.ApiLock

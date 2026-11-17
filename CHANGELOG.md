@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.6.0
+
+`InkproofTools.ApiLock.sourceTheoremName` skips leading `@[...]` attribute blocks, so `declaresInSource` and `declaresInSourceAt` find attributed theorems.
+
 ## v0.5.0
 
 `InkproofTools.ApiLock.declaresInSourceAt` says whether a source line read inside given namespaces declares a theorem with a given full name.

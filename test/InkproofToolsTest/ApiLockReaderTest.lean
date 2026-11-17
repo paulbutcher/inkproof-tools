@@ -51,3 +51,9 @@ run_meta do
   expect (declaresInSourceAt "  theorem mono {a : α}" "X.G.mono" ["X", "G"]) "nested namespaces not found"
   expect (!declaresInSourceAt "theorem f_eq : True" "X.f_eq" []) "namespace ignored"
   expect (!declaresInSourceAt "theorem f_eq : True" "f_eq" ["X"]) "outer name accepted"
+  expect (declaresInSourceAt "@[simp] protected theorem mono : True := trivial" "X.G.mono" ["X", "G"])
+    "attribute and modifier not skipped"
+  expect (declaresInSourceAt "@[simp, grind =] theorem f_eq (h : p)" "X.f_eq" ["X"]) "attribute with binder not skipped"
+  expect (declaresInSourceAt "  @[simp] @[local grind →] private theorem f_eq" "f_eq" []) "several attributes not skipped"
+  expect (!declaresInSourceAt "@[simp] def f_eq : True" "f_eq" []) "attributed non-theorem accepted"
+  expect (!declaresInSourceAt "@[simp theorem f_eq : True" "f_eq" []) "unterminated attribute accepted"
