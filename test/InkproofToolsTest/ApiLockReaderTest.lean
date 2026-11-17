@@ -33,3 +33,14 @@ run_meta do
   expect (declares line "Fixture.total_line")  "full name not found"
   expect (declares line "total_line" ["Other", "Fixture"] == false) "wrong namespace accepted"
   expect (!declares "def Fixture.total_line : Nat" "Fixture.total_line") "non-theorem accepted"
+
+run_meta do
+  let d := fun (line name : String) => declaresInSource line name
+  expect (d "theorem foo (x : Nat) : x = x" "foo") "binder not handled"
+  expect (d "  private theorem foo {α : Type}" "foo") "indented private theorem missed"
+  expect (d "protected theorem foo" "foo") "statement on next line not handled"
+  expect (declaresInSource "theorem foo.bar[Inhabited α]" "bar" ["foo"]) "relative name not found"
+  expect (declaresInSource "theorem foo.bar : True" "bar" ["Other", "foo"] == false) "wrong namespace accepted"
+  expect (!d "theorem foobar (x : Nat)" "foo") "prefix of a name accepted"
+  expect (!d "lemma foo : True" "foo") "non-theorem accepted"
+  expect (!d "-- theorem foo : True" "foo") "comment accepted"

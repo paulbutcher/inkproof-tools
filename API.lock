@@ -6,6 +6,8 @@ def InkproofTools.ApiLock.apiLines : Array Lean.Name → Lean.Meta.MetaM (Array 
 def InkproofTools.ApiLock.candidates : List String → String → List String
 theorem InkproofTools.ApiLock.candidates_nil : ∀ (name : String), InkproofTools.ApiLock.candidates [] name = [name]
 def InkproofTools.ApiLock.declares : String → String → optParam (List String) [] → Bool
+def InkproofTools.ApiLock.declaresInSource : String → String → optParam (List String) [] → Bool
+theorem InkproofTools.ApiLock.declaresInSource_iff : ∀ (line name : String) (namespaces : List String), InkproofTools.ApiLock.declaresInSource line name namespaces = Bool.true ↔ ∃ n, InkproofTools.ApiLock.sourceTheoremName line = Option.some n ∧ n ∈ InkproofTools.ApiLock.candidates namespaces name
 theorem InkproofTools.ApiLock.declares_full : ∀ (line name : String) (namespaces : List String) (thm : InkproofTools.ApiLock.Theorem), InkproofTools.ApiLock.parseTheorem line = Option.some thm → thm.name = name → InkproofTools.ApiLock.declares line name namespaces = Bool.true
 theorem InkproofTools.ApiLock.declares_iff : ∀ (line name : String) (namespaces : List String), InkproofTools.ApiLock.declares line name namespaces = Bool.true ↔ ∃ thm, InkproofTools.ApiLock.parseTheorem line = Option.some thm ∧ thm.name ∈ InkproofTools.ApiLock.candidates namespaces name
 theorem InkproofTools.ApiLock.declares_relative : ∀ (line name : String) (namespaces : List String) (k : Nat) (thm : InkproofTools.ApiLock.Theorem), InkproofTools.ApiLock.parseTheorem line = Option.some thm → k ≤ namespaces.length → thm.name = InkproofTools.ApiLock.qualify (List.take k namespaces) name → InkproofTools.ApiLock.declares line name namespaces = Bool.true
@@ -23,6 +25,8 @@ theorem InkproofTools.ApiLock.qualify_of_ne_nil : ∀ (namespaces : List String)
 def InkproofTools.ApiLock.run : Array Lean.Name → IO Unit
 def InkproofTools.ApiLock.run.unsafe_1 : BaseIO Unit
 opaque InkproofTools.ApiLock.run.unsafe_impl_2 : BaseIO Unit
+def InkproofTools.ApiLock.sourceTheoremName : String → Option String
+theorem InkproofTools.ApiLock.sourceTheoremName_theorem : ∀ (name tail : String), name ≠ "" → (∀ (d : Char), d ∈ name.toList → InkproofTools.ApiLock.isNameEnd✝ d = Bool.false) → (∀ (c : Char), c ∈ tail.toList.head? → InkproofTools.ApiLock.isNameEnd✝ c = Bool.true) → InkproofTools.ApiLock.sourceTheoremName ("theorem " ++ name ++ tail) = Option.some name
 def InkproofTools.ApiLock.theoremLine : String → String → String
 def InkproofTools.AxiomCheck.check : Lean.Name → optParam (Option Lean.Name) Option.none → optParam (List Lean.Name) [] → Lean.Core.CoreM Unit
 def InkproofTools.AxiomCheck.violations : Lean.Environment → Lean.Name → optParam (Option Lean.Name) Option.none → optParam (List Lean.Name) [] → Lean.Core.CoreM (Array String)

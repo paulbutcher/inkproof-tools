@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.4.0
+
+`InkproofTools.ApiLock.declaresInSource` says whether a line of Lean source declares a theorem, with binders after the name or none.
+
 ## v0.3.0
 
 A reader for the lines `api-lock` writes, `InkproofTools.ApiLock.Reader`, which imports only Lean core.

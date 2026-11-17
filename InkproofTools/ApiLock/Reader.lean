@@ -53,6 +53,29 @@ def declares (line name : String) (namespaces : List String := []) : Bool :=
   | some thm => (candidates namespaces name).contains thm.name
   | none => false
 
+private def isNameEnd (c : Char) : Bool :=
+  c.isWhitespace || c == ':' || c == '(' || c == '{' || c == '[' || c == '⦃'
+
+private def dropOptional (p : String) (cs : List Char) : List Char :=
+  (dropPrefix p.toList cs).getD cs
+
+/-- The name a line of Lean source declares as a theorem, after any indentation and a `private` or
+`protected` modifier. The name ends at whitespace, a colon or the first binder, so binders and a
+statement on a later line do not matter. -/
+def sourceTheoremName (line : String) : Option String := do
+  let cs := dropOptional "protected " (dropOptional "private " (line.toList.dropWhile Char.isWhitespace))
+  let rest ← dropPrefix theoremTag cs
+  let name := rest.takeWhile (!isNameEnd ·)
+  if name.isEmpty then none else some (String.ofList name)
+
+/-- Whether a line of Lean source declares the theorem `name`, written in full or relative to
+`namespaces`. Unlike `declares`, which reads `API.lock` lines, the name may be followed by binders or
+nothing at all. -/
+def declaresInSource (line name : String) (namespaces : List String := []) : Bool :=
+  match sourceTheoremName line with
+  | some n => (candidates namespaces name).contains n
+  | none => false
+
 /-- Outside any namespace a name is its own full name. -/
 theorem qualify_nil (name : String) : qualify [] name = name := rfl
 
@@ -168,5 +191,36 @@ theorem declares_relative (line name : String) (namespaces : List String) (k : N
 theorem declares_full (line name : String) (namespaces : List String) (thm : Theorem)
     (h : parseTheorem line = some thm) (hn : thm.name = name) : declares line name namespaces = true :=
   declares_relative line name namespaces 0 thm h (Nat.zero_le _) (by simp [qualify, hn])
+
+theorem declaresInSource_iff (line name : String) (namespaces : List String) :
+    declaresInSource line name namespaces = true ↔
+      ∃ n, sourceTheoremName line = some n ∧ n ∈ candidates namespaces name := by
+  unfold declaresInSource
+  cases sourceTheoremName line <;> simp
+
+/-- An unindented `theorem` line declares the name up to the first whitespace, colon or binder. -/
+theorem sourceTheoremName_theorem (name tail : String) (hn : name ≠ "")
+    (hf : ∀ d ∈ name.toList, isNameEnd d = false)
+    (ht : ∀ c ∈ tail.toList.head?, isNameEnd c = true) :
+    sourceTheoremName ("theorem " ++ name ++ tail) = some name := by
+  have hl : ("theorem " ++ name ++ tail).toList = theoremTag ++ (name.toList ++ tail.toList) := by
+    simp only [String.toList_append, List.append_assoc]
+    rfl
+  have htw : name.toList.takeWhile (!isNameEnd ·) = name.toList := by
+    generalize name.toList = l at hf
+    induction l with
+    | nil => rfl
+    | cons d ds ih =>
+      simp only [List.takeWhile, hf d List.mem_cons_self, Bool.not_false, List.cons.injEq, true_and]
+      exact ih (fun e he => hf e (List.mem_cons_of_mem _ he))
+  have hstop : (tail.toList).takeWhile (!isNameEnd ·) = [] := by
+    cases h : tail.toList with
+    | nil => rfl
+    | cons c cs => have := ht c (by simp [h]); simp [List.takeWhile, this]
+  have hne : name.toList ≠ [] := fun h => hn (by rw [← String.toList_inj]; simpa using h)
+  unfold sourceTheoremName
+  rw [hl]
+  simp only [theoremTag, bind, Option.bind]
+  simp [dropOptional, dropPrefix, List.takeWhile_append, htw, hstop, hne]
 
 end InkproofTools.ApiLock
