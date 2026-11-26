@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.6.1
+
+The README's require example uses `vX.Y.Z` instead of a pinned release.
+
 ## v0.6.0
 
 `InkproofTools.ApiLock.sourceTheoremName` skips leading `@[...]` attribute blocks, so `declaresInSource` and `declaresInSourceAt` find attributed theorems.
