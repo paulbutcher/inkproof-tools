@@ -5,8 +5,10 @@ Part of Inkproof. Released under the Apache 2.0 license; see `LICENSE`.
 Development tooling for Inkproof libraries: `api-lock`, the test harness and driver, and the axiom check. Require it from the library's `test` subproject (it needs no other dependency), never from the library itself. The one exception is `InkproofTools.ApiLock.Reader`, which imports nothing and may be linked by an application that reads `API.lock`.
 
 ```lean
-require «inkproof-tools» from git "https://github.com/paulbutcher/inkproof-tools" @ "v0.2.1"
+require «inkproof-tools» from git "https://github.com/paulbutcher/inkproof-tools" @ "vX.Y.Z"
 ```
+
+Use the latest release tag (see `CHANGELOG.md`) for `vX.Y.Z`.
 
 ## What it does
 
